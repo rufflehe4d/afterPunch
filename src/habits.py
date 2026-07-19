@@ -77,7 +77,7 @@ def show():
     print()
 
 def update(name, item, new_value) -> str:
-    if name in habits and confirm(f"Update {habits[name[item]]} to {new_value}? "):
+    if name in habits and confirm(f"Update {habits[name][item]} to {new_value}? "):
         habits[name][item] = new_value
         return "Updated!"
     return "Failed!"
