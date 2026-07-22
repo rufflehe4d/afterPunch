@@ -1,47 +1,24 @@
 #!/usr/bin/env python3
 
-# DOCKS
+# === INIT ===
 from pathlib import Path
 from datetime import date
 import json
 import sys
 import os
 import platformdirs
-if os.name != "nt":
-    import readline
+import bolts
 
-__version__ = "v0.1"
+__version__ = "v0.1.1"
 
-# FILES
+# === FILES ===
 DATA_DIR = platformdirs.user_data_dir("afterPunch/habits")
 DATA_LOCATION = f"{DATA_DIR}/habits.json"
 
 Path(DATA_DIR).mkdir(exist_ok=True)
 
-# FUNCTIONS
-## CORE
-def clear():
-    os.system("cls" if os.name == "nt" else "clear")
-
-def confirm(msg="Are you sure?") -> bool:
-    while True:
-        choice = input(f"{msg} [Y/n] ").strip().lower()
-        if "n" in choice:
-            return False
-        elif "y" in choice or not choice:
-            return True
-        else:
-            print("ERROR: Invalid choice")
-            continue
-
-def close(code=0):
-    global habits
-    if habits:
-        save()
-    sys.exit(code)
-
-## PROGRAM SPECIFIC
-def add(name=None, cat="uncategorized", status="incomplete") -> str:
+# === PROGRAM FUNCTIONS ===
+def add(name=None, cat="uncategorized", status="incomplete"):
     if name is None:
         name = f"HABIT{len(habits)+1}"
     habits[name] = {
@@ -49,18 +26,19 @@ def add(name=None, cat="uncategorized", status="incomplete") -> str:
         "status": status,
         "created_at": date.today().isoformat(),
     }
-    return "Added!"
+    print(f"{bolts.GREEN}INFO{bolts.RST}: Data added")
 
-def rem(name) -> str:
-    if name in habits and confirm(f"You wanna remove {name}?"):
+def rem(name):
+    if name in habits and bolts.confirm(f"Permanently delete {name}?"):
         del habits[name]
-        return f"Removed {name}!"
-    return f"ERROR: Couldn't remove {name}!"
+        print(f"{bolts.GREEN}INFO{bolts.RST}: Removed {name}")
+        return
+    bolts.error(6)
 
-def save() -> str:
+def save():
     with open(DATA_LOCATION, "w") as d:
         json.dump(habits, d, indent=4)
-    return "Data Saved!"
+    print(f"{bolts.GREEN}INFO{bolts.RST}: Data saved")
 
 def fetch() -> dict:
     if Path(DATA_LOCATION).exists():
@@ -76,36 +54,46 @@ def show():
             print(f"- {k}: {v}")
     print()
 
-def update(name, item, new_value) -> str:
-    if name in habits and confirm(f"Update {habits[name][item]} to {new_value}? "):
+def update(name, item, new_value):
+    if name in habits and bolts.confirm(f"Update {habits[name][item]} to {new_value}? "):
         habits[name][item] = new_value
-        return "Updated!"
-    return "Failed!"
+        print(f"{bolts.GREEN}INFO{bolts.RST}: Updated")
+    bolts.error(8)
 
+# === PUTTING IT ALL TOGETHER ===
 def main():
     global habits
     habits = fetch()
 
     while True:
-        ui = input("󰘧 ").strip().split()
+        ui = input(f"{bolts.MAGENTA}󰘧{bolts.RST} ").strip().split()
         if not ui:
             continue
         cmd = ui[0].lower()
 
-        if cmd in {"cls", "clear"}:
-            clear()
+        if cmd in {"cls", "clear", "c"}:
+            bolts.clear()
 
         elif cmd in {"exit", "quit", "q"}:
-            close()
+            bolts.close(func=save, condition=habits)
 
         elif cmd == "add":
-            add(ui[1], ui[2], ui[3])
+            try:
+                add(ui[1], ui[2], ui[3])
+            except IndexError:
+                bolts.error(3)
 
         elif cmd == "rem":
-            rem(ui[1])
+            try:
+                rem(ui[1])
+            except IndexError:
+                bolts.error(3)
 
         elif cmd == "update":
-            update(ui[1], ui[2], ui[3])
+            try:
+                update(ui[1], ui[2], ui[3])
+            except IndexError:
+                bolts.error(3)
 
         elif cmd == "save":
             save()
@@ -117,9 +105,9 @@ def main():
             show()
         
         else:
-            print("ERROR: Invalid command!")
+            bolts.error(10)
 
 if __name__ == "__main__":
     main()
 
-# END OF LINE
+# === END OF LINE ===
